@@ -6,5 +6,5 @@
   "exe_path": "release-asset",
   "download_url": "https://github.com/umtark/Gelir_Gider_Uygulamasi/releases/latest/download/fatura_masaustu.exe",
   "sha256": "B576521FB86298A696304C96E5B4BCE487716D60FE3139DE7AED65488C43AAD3",
-  "notes": "Filo Ozeti grid yenilendi, dashboard düzeni iyileştirildi, performans iyileştirmleri yapıldı, araç arama özelliği eklendi, güncelleme kontrolü geliştirildi."
+  "notes": "Filo özeti grid yenilendi, dashboard düzeni iyileştirildi, performans iyileştirmleri yapıldı, araç arama özelliği eklendi, güncelleme kontrolü geliştirildi."
 }
