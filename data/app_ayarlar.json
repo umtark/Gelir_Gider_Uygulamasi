@@ -1,0 +1,9 @@
+{
+    "lang": "tr",
+    "theme": "dark",
+    "update_enabled": true,
+    "update_repo": "umtark/Gelir_Gider_Uygulamasi",
+    "update_asset_keyword": "fatura",
+    "update_interval_hours": 12,
+    "update_last_check": ""
+}
