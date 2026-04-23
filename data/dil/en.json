@@ -344,5 +344,15 @@
     "update_check_failed": "Update check failed.",
     "update_manual_install": "Auto replacement is disabled in development mode. Please install downloaded build manually.",
     "update_manual_package": "Downloaded package is not an exe. Please install it manually.",
-    "update_download_failed": "Update download failed."
+    "update_download_failed": "Update download failed.",
+    "settings_update_status": "Update Status:",
+    "settings_update_download": "Download and Install",
+    "settings_update_download_disabled": "Download and Install (no update)",
+    "update_status_idle": "No update check has been performed yet.",
+    "update_status_none": "There is no downloadable update right now.",
+    "update_status_current": "App is up to date (v{0}).",
+    "update_status_available": "New version ready: {0}",
+    "update_status_downloading": "Downloading update...",
+    "update_status_installing": "Installing update, app will restart...",
+    "update_found_click_download": "New version found: {0}\n\nClick 'Download and Install' in Settings to start installation."
 }

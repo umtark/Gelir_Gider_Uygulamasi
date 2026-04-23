@@ -342,5 +342,15 @@
     "update_check_failed": "Guncelleme kontrolu basarisiz.",
     "update_manual_install": "Gelisim modunda otomatik degisim yapilmadi. Indirilen surumu manuel kurun.",
     "update_manual_package": "Guncelleme paketi exe degil. Dosya indirildi, lutfen manuel kurulum yapin.",
-    "update_download_failed": "Guncelleme indirilemedi."
+    "update_download_failed": "Guncelleme indirilemedi.",
+    "settings_update_status": "Guncelleme Durumu:",
+    "settings_update_download": "Indir ve Kur",
+    "settings_update_download_disabled": "Indir ve Kur (guncelleme yok)",
+    "update_status_idle": "Henüz güncelleme kontrolü yapılmadı.",
+    "update_status_none": "Su an indirilecek bir guncelleme bulunmuyor.",
+    "update_status_current": "Uygulama guncel (v{0}).",
+    "update_status_available": "Yeni surum hazir: {0}",
+    "update_status_downloading": "Guncelleme indiriliyor...",
+    "update_status_installing": "Guncelleme kuruluyor, uygulama yeniden baslatilacak...",
+    "update_found_click_download": "Yeni surum bulundu: {0}\n\nAyarlar sayfasindaki 'Indir ve Kur' butonuna tiklayarak kurulumu baslatabilirsiniz."
 }

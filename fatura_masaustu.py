@@ -170,7 +170,7 @@ app_config = {
     "lang": "tr",
     "theme": "dark",
     "update_enabled": True,
-    "update_repo": "umtark/Yonetim_Paneli_Genel",
+    "update_repo": "umtark/Gelir_Gider_Uygulamasi",
     "update_asset_keyword": "fatura",
     "update_interval_hours": 12,
     "update_last_check": "",
@@ -1382,6 +1382,9 @@ class FaturaApp(QMainWindow):
         self.records = []
         self.araclar = []
         self.editing_record_id = None
+        self.pending_update = None
+        self._update_available = False
+        self._update_status_message = _t("update_status_idle", "Henüz güncelleme kontrolü yapılmadı.")
         self.load_records()
         
         self.flash_state = False
@@ -2356,6 +2359,22 @@ class FaturaApp(QMainWindow):
         self.btn_update_check.setStyleSheet(build_button_style(palette["info_bg"], palette["white"], palette["info_hover"], padding="6px 12px"))
         self.btn_update_check.clicked.connect(lambda: self.check_for_updates(show_no_update=True, force=True))
         ayarlar_form.addRow("", self.btn_update_check)
+
+        self.lbl_update_status_title = QLabel(_t("settings_update_status", "Guncelleme Durumu:"))
+        self.lbl_update_status_title.setStyleSheet("background-color: transparent; font-size: 14px;")
+
+        self.lbl_update_status = QLabel("")
+        self.lbl_update_status.setWordWrap(True)
+        self.lbl_update_status.setStyleSheet("background-color: transparent; font-size: 13px;")
+        ayarlar_form.addRow(self.lbl_update_status_title, self.lbl_update_status)
+
+        self.btn_update_download = QPushButton()
+        self.btn_update_download.setFixedWidth(250)
+        self.btn_update_download.setFixedHeight(38)
+        self.btn_update_download.setStyleSheet(build_button_style(palette["warning_bg"], palette["white"], palette["warning_hover"], padding="6px 12px"))
+        self.btn_update_download.clicked.connect(self.download_pending_update)
+        ayarlar_form.addRow("", self.btn_update_download)
+        self._set_update_status(self._update_status_message, available=False)
         
         btn_lyt = QHBoxLayout()
         self.btn_ayarlar_kaydet = QPushButton(_t("settings_save", "Ayarları Kaydet"))
@@ -2380,8 +2399,6 @@ class FaturaApp(QMainWindow):
         ayarlar_lyt.addStretch()
         
         self.stack.addWidget(self.page_ayarlar)
-
-        # Footer applies to the entire app now (centered along the very bottom of the screen)
         current_year = datetime.now().year
         year_str = f"2026 - {current_year}"
         self.lbl_footer = QLabel(f"© {_t('owner_name', 'Ümit Arik')} {year_str}")
@@ -2483,6 +2500,13 @@ class FaturaApp(QMainWindow):
             self.chk_update_auto.setText(_t("settings_update_auto", "12 saatte bir otomatik kontrol et"))
         if hasattr(self, "btn_update_check"):
             self.btn_update_check.setText(_t("settings_update_check", "Guncellemeleri Kontrol Et"))
+        if hasattr(self, "lbl_update_status_title"):
+            self.lbl_update_status_title.setText(_t("settings_update_status", "Guncelleme Durumu:"))
+        if getattr(self, "pending_update", None):
+            pending_ver = self.pending_update.get("version", "?")
+            self._set_update_status(_t("update_status_available", "Yeni surum hazir: {0}").format(pending_ver), available=True)
+        else:
+            self._set_update_status(_t("update_status_idle", "Henüz güncelleme kontrolü yapılmadı."), available=False)
         self.ozet_guncelle()
 
     def save_app_settings_gui(self):
@@ -2585,11 +2609,32 @@ class FaturaApp(QMainWindow):
             payload = json.loads(resp.read().decode("utf-8"))
         return payload
 
+    def _set_update_status(self, message: str, available: bool = False):
+        self._update_available = bool(available)
+        self._update_status_message = str(message or "")
+
+        if hasattr(self, "lbl_update_status"):
+            self.lbl_update_status.setText(self._update_status_message)
+        if hasattr(self, "btn_update_download"):
+            self.btn_update_download.setEnabled(self._update_available)
+            if self._update_available:
+                self.btn_update_download.setText(_t("settings_update_download", "Indir ve Kur"))
+            else:
+                self.btn_update_download.setText(_t("settings_update_download_disabled", "Indir ve Kur (guncelleme yok)"))
+
+    def download_pending_update(self):
+        if not self.pending_update:
+            QMessageBox.information(self, _t("msg_bilgi", "Bilgi"), _t("update_status_none", "Su an indirilecek bir guncelleme bulunmuyor."))
+            return
+        self.download_and_apply_update(self.pending_update.get("url", ""), self.pending_update.get("name", ""))
+
     def check_for_updates(self, show_no_update=True, force=False):
         repo_full = str(app_config.get("update_repo", "")).strip()
         asset_keyword = str(app_config.get("update_asset_keyword", "fatura")).strip().lower()
 
         if not repo_full:
+            self.pending_update = None
+            self._set_update_status(_t("update_repo_missing", "Guncelleme kontrolu icin GitHub repo bilgisi gerekli (owner/repo)."), available=False)
             if force:
                 QMessageBox.warning(self, _t("msg_uyar", "Uyarı"), _t("update_repo_missing", "Guncelleme kontrolu icin GitHub repo bilgisi gerekli (owner/repo)."))
             return
@@ -2620,6 +2665,11 @@ class FaturaApp(QMainWindow):
                     selected_asset = assets[0]
 
             if not self._is_newer_version(latest_tag):
+                self.pending_update = None
+                self._set_update_status(
+                    _t("update_status_current", "Uygulama guncel (v{0}).").format(APP_VERSION),
+                    available=False,
+                )
                 if show_no_update:
                     QMessageBox.information(self, _t("msg_bilgi", "Bilgi"), _t("update_no_new", "Uygulama guncel. Yeni surum bulunamadi."))
                 return
@@ -2628,31 +2678,43 @@ class FaturaApp(QMainWindow):
             asset_name = selected_asset.get("name", "") if selected_asset else ""
             rel_name = rel.get("name", latest_tag)
 
-            msg = QMessageBox(self)
-            msg.setWindowTitle(_t("update_available_title", "Guncelleme Hazir"))
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.setText(
-                _t("update_available_text", "Yeni surum bulundu!\n\nMevcut: v{0}\nYeni: {1}\n\nSimdi indirip kurmak ister misiniz?").format(APP_VERSION, rel_name)
-            )
-            btn_download = msg.addButton(_t("update_download_install", "Indir ve Kur"), QMessageBox.ButtonRole.AcceptRole)
-            msg.addButton(_t("update_later", "Daha Sonra"), QMessageBox.ButtonRole.RejectRole)
-            msg.exec()
-
-            if msg.clickedButton() == btn_download:
-                if not asset_url:
+            if not asset_url:
+                self.pending_update = None
+                self._set_update_status(_t("update_asset_missing", "Guncelleme dosyasi bulunamadi."), available=False)
+                if force:
                     QMessageBox.warning(self, _t("msg_hata", "Hata"), _t("update_asset_missing", "Guncelleme dosyasi bulunamadi."))
-                    return
-                self.download_and_apply_update(asset_url, asset_name)
+                return
+
+            self.pending_update = {
+                "url": asset_url,
+                "name": asset_name,
+                "version": rel_name,
+            }
+            self._set_update_status(_t("update_status_available", "Yeni surum hazir: {0}").format(rel_name), available=True)
+            if force:
+                QMessageBox.information(
+                    self,
+                    _t("update_available_title", "Guncelleme Hazir"),
+                    _t("update_found_click_download", "Yeni surum bulundu: {0}\n\nAyarlar sayfasindaki 'Indir ve Kur' butonuna tiklayarak kurulumu baslatabilirsiniz.").format(rel_name),
+                )
 
         except urllib.error.URLError as exc:
+            self.pending_update = None
+            self._set_update_status(_t("update_check_failed", "Guncelleme kontrolu basarisiz."), available=False)
             if force:
                 QMessageBox.warning(self, _t("msg_hata", "Hata"), _t("update_check_failed", "Guncelleme kontrolu basarisiz.") + f"\n{exc}")
         except Exception as exc:
+            self.pending_update = None
+            self._set_update_status(_t("update_check_failed", "Guncelleme kontrolu basarisiz."), available=False)
             if force:
                 QMessageBox.warning(self, _t("msg_hata", "Hata"), _t("update_check_failed", "Guncelleme kontrolu basarisiz.") + f"\n{exc}")
 
     def download_and_apply_update(self, asset_url: str, asset_name: str):
         try:
+            if not asset_url:
+                raise ValueError(_t("update_asset_missing", "Guncelleme dosyasi bulunamadi."))
+
+            self._set_update_status(_t("update_status_downloading", "Guncelleme indiriliyor..."), available=False)
             temp_dir = tempfile.mkdtemp(prefix="gelir_gider_update_")
             safe_name = asset_name or "update_package.exe"
             download_path = os.path.join(temp_dir, safe_name)
@@ -2663,11 +2725,13 @@ class FaturaApp(QMainWindow):
 
             if not getattr(sys, "frozen", False):
                 webbrowser.open(asset_url)
+                self._set_update_status(_t("update_manual_install", "Gelisim modunda otomatik degisim yapilmadi. Indirilen surumu manuel kurun."), available=False)
                 QMessageBox.information(self, _t("msg_bilgi", "Bilgi"), _t("update_manual_install", "Gelisim modunda otomatik degisim yapilmadi. Indirilen surumu manuel kurun."))
                 return
 
             if not download_path.lower().endswith(".exe"):
                 webbrowser.open(asset_url)
+                self._set_update_status(_t("update_manual_package", "Guncelleme paketi exe degil. Dosya indirildi, lutfen manuel kurulum yapin."), available=False)
                 QMessageBox.information(self, _t("msg_bilgi", "Bilgi"), _t("update_manual_package", "Guncelleme paketi exe degil. Dosya indirildi, lutfen manuel kurulum yapin."))
                 return
 
@@ -2700,8 +2764,10 @@ del "%SRC%" >nul 2>&1
             if hasattr(subprocess, "CREATE_NO_WINDOW"):
                 creationflags = subprocess.CREATE_NO_WINDOW
             subprocess.Popen(["cmd", "/c", bat_path], creationflags=creationflags)
+            self._set_update_status(_t("update_status_installing", "Guncelleme kuruluyor, uygulama yeniden baslatilacak..."), available=False)
             QApplication.quit()
         except Exception as exc:
+            self._set_update_status(_t("update_download_failed", "Guncelleme indirilemedi."), available=False)
             QMessageBox.warning(self, _t("msg_hata", "Hata"), _t("update_download_failed", "Guncelleme indirilemedi.") + f"\n{exc}")
 
     # --- ARAÇ YÖNETİMİ METOTLARI ---
