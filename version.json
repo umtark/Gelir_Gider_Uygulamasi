@@ -1,10 +1,10 @@
 {
   "app_name": "FiloMuhasebe",
-  "version": "1.0.6",
-  "release_date": "2026-04-23",
+  "version": "1.1.2",
+  "release_date": "2026-04-20",
   "exe_name": "FiloMuhasebe.exe",
   "exe_path": "release-asset",
   "download_url": "https://github.com/umtark/Gelir_Gider_Uygulamasi/releases/latest/download/FiloMuhasebe.exe",
   "sha256": "B576521FB86298A696304C96E5B4BCE487716D60FE3139DE7AED65488C43AAD3",
-  "notes": "Performans iyileştirmeleri, dil güncellemeleri ve küçük hata düzeltmeleri yapıldı."
+  "notes": "Performans iyileştirmeleri ve küçük hata düzeltmeleri yapıldı."
 }
